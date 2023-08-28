@@ -4,6 +4,7 @@ opencf_LDFLAGS = $(LIBUSB1_LIBS)
 opencf_SOURCES = src/main.cc \
 	         src/trace.cc \
 		 src/getopts.cc \
+		 src/utils.cc \
 		 src/drivers/driver-core.cc \
 		 src/drivers/driver-pemu.cc
 

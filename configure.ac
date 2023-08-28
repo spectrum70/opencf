@@ -46,7 +46,6 @@ PKG_CHECK_MODULES([LIBUSB1], [libusb-1.0], [
 	AC_MSG_WARN([libusb-1.x not found, trying legacy libusb-0.1 as a fallback; consider installing libusb-1.x instead])
 ])
 
-
 # Checks for header files.
 AC_CHECK_HEADERS([fcntl.h sys/ioctl.h termios.h])
 

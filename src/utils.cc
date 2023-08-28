@@ -18,22 +18,21 @@
  *
  */
 
-#include "trace.hh"
-#include "getopts.hh"
-#include "version.hh"
+#include "utils.hh"
 
-#include "driver-core.hh"
+namespace utils {
 
-using namespace trace;
-
-int main(int argc, char **argv)
+uint16_t ntohs(uint16_t val)
 {
-	getopts opts(argc, argv);
+	return (val << 8 | val >> 8);
+}
 
-	log_info("opencf " version " starting", argv[0]);
-	log_info("starting driver core ...");
+uint32_t ntohl(uint32_t val)
+{
+	return (val << 24) |
+	       ((val << 8) & 0x00ff0000) |
+	       ((val >> 8) & 0x0000ff00) |
+	       (val >> 24);
+}
 
-	driver_core dc;
-
-	dc.init();
 }

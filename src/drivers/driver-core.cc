@@ -28,10 +28,12 @@ struct usb_ids {
 	int id_vendor;
 	int id_product;
 	string class_name;
+	string name;
 };
 
 static struct usb_ids ids[] = {
-	{ 0x1357, 0x0503, "driver_pemu" },
+	{ 0x1357, 0x0503, "driver_pemu", "P&E Multilink Universal" },
+	{ 0x16d0, 0x0567, "to-do", "USBDM HCS08,HCS12,Coldfire-V1 BDM" },
 	0
 };
 
@@ -50,7 +52,7 @@ driver_core::~driver_core()
 int driver_core::detect_usb_pod()
 {
 	libusb_device **list;
-	int dev_count, i, n;
+	int dev_count, i, n, rval = 0;
 
 	dev_count = libusb_get_device_list(ctx, &list);
 
@@ -60,49 +62,72 @@ int driver_core::detect_usb_pod()
 
 		libusb_get_device_descriptor(device, &desc);
 
-		log_dbg("%s() vendor:product %04x:%04x", __func__,
-			desc.idVendor, desc.idProduct);
-
 		for (n = 0 ;;) {
 			if (ids[n].id_vendor == 0)
 				break;
 
 			if (desc.idVendor == ids[n].id_vendor &&
 				desc.idProduct == ids[n].id_product) {
-				log_info("hurra !!!");
+
+				log_info("programmer detected: %s",
+					 ids[n].name.c_str());
 
 				drv = (this->*md[ids[n].class_name])(device);
 
-				return 0;
+				goto exit_detect;
 			}
-
 			n++;
 		}
 	}
 
-	log_err("no usb device found, exiting");
+	rval = -1;
 
+exit_detect:
 	libusb_free_device_list(list, 1);
 
-	return -1;
+	return rval;
 }
 
 int driver_core::init()
 {
-	int err;
+	int err = 0;
 
 	err = libusb_init(&ctx);
-	if (err)
+	if (err) {
 		log_err("cannot initialize libusb, error %s", err);
+		goto exit;
+	}
 
-	/* First stage is detecting usb pod is possible */
-	detect_usb_pod();
+	/* First stage is detecting usb pod  */
+	err = detect_usb_pod();
+	if (err) {
+		log_err("no usb device found, exiting");
+		goto exit;
+	}
 
-	drv->probe();
+	err = drv->probe();
+	if (err) {
+		log_err("device probe failed, exiting");
+		goto exit;
+	}
 
+	err = drv->get_programmer_info();
+	if (err) {
+		log_err("cannot read programmer info, exiting");
+		goto exit;
+	}
+
+	err = drv->check_connected_cpu();
+	if (err) {
+		log_err("no cpu connected, exiting");
+		goto exit;
+	}
+
+
+exit:
 	libusb_exit(ctx);
 
-	return 0;
+	return err;
 }
 
 
