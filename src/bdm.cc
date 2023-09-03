@@ -18,21 +18,30 @@
  *
  */
 
-#include "trace.hh"
-#include "core.hh"
-#include "getopts.hh"
-#include "version.hh"
+#include "bdm.hh"
+#include "utils.hh"
+#include "driver-core.hh"
 
-using namespace trace;
+#include <cstring>
 
-int main(int argc, char **argv)
+using namespace utils;
+
+bdm_ops::bdm_ops(driver *current_driver) : drv(current_driver)
 {
-	getopts opts(argc, argv);
+}
 
-	log_imp("opencf " version " starting", argv[0]);
-	log_info("starting driver core ...");
+void bdm_ops::reset(bool state)
+{
+	drv->send_reset(state);
+}
 
-	core c;
+uint32_t bdm_ops::read_ad_reg(uint8_t reg)
+{
+	memset(buff, 0, 256);
 
-	return c.run();
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_RDAREG | reg);
+
+	drv->xfer_bdm_data(buff, 2);
+
+	return ntohl(*(uint32_t *)buff);
 }

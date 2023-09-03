@@ -40,13 +40,15 @@ static struct usb_ids ids[] = {
 template <typename T> driver *driver_core::create_driver(libusb_device *device)
 { return new T(device); }
 
-driver_core::driver_core()
+driver_core::driver_core() : ctx(0)
 {
 	md["driver_pemu"] = &driver_core::create_driver<driver_pemu>;
 }
 
 driver_core::~driver_core()
 {
+	if (ctx)
+		libusb_exit(ctx);
 }
 
 int driver_core::detect_usb_pod()
@@ -69,7 +71,7 @@ int driver_core::detect_usb_pod()
 			if (desc.idVendor == ids[n].id_vendor &&
 				desc.idProduct == ids[n].id_product) {
 
-				log_info("programmer detected: %s",
+				log_imp("detected: %s",
 					 ids[n].name.c_str());
 
 				drv = (this->*md[ids[n].class_name])(device);
@@ -90,44 +92,33 @@ exit_detect:
 
 int driver_core::init()
 {
-	int err = 0;
+	int err;
 
 	err = libusb_init(&ctx);
 	if (err) {
 		log_err("cannot initialize libusb, error %s", err);
-		goto exit;
+		return err;
 	}
 
-	/* First stage is detecting usb pod  */
+	/*
+	 * First stage is detecting usb pod,
+	 * based on it, we select the driver dynamicallt.
+	 */
+	log_info("detecting programmer ...");
+
 	err = detect_usb_pod();
 	if (err) {
 		log_err("no usb device found, exiting");
-		goto exit;
+		return err;
 	}
 
 	err = drv->probe();
 	if (err) {
 		log_err("device probe failed, exiting");
-		goto exit;
+		return err;
 	}
 
-	err = drv->get_programmer_info();
-	if (err) {
-		log_err("cannot read programmer info, exiting");
-		goto exit;
-	}
-
-	err = drv->check_connected_cpu();
-	if (err) {
-		log_err("no cpu connected, exiting");
-		goto exit;
-	}
-
-
-exit:
-	libusb_exit(ctx);
-
-	return err;
+	return 0;
 }
 
 

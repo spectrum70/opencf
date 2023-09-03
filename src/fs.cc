@@ -18,21 +18,51 @@
  *
  */
 
+#include "fs.hh"
 #include "trace.hh"
-#include "core.hh"
-#include "getopts.hh"
-#include "version.hh"
+
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/stat.h>
+#include <cstddef>
 
 using namespace trace;
 
-int main(int argc, char **argv)
+namespace fs {
+
+char *load_file_to_mem(const char *path)
 {
-	getopts opts(argc, argv);
+	char *rval;
+	struct stat st;
+	int f, rd;
 
-	log_imp("opencf " version " starting", argv[0]);
-	log_info("starting driver core ...");
+	if (stat(path, &st) != 0) {
+		log_err("load: %s not found", path);
+		return NULL;
+	}
 
-	core c;
+	f = open(path, 'r');
+	if (f == -1) {
+		log_err("error opening file");
+		return NULL;
+	}
 
-	return c.run();
+	rval = new char[st.st_size];
+	if (!rval) {
+		log_err("cannot allocate memory");
+		return NULL;
+	}
+
+	log_dbg("%s() reading: %d", __func__, st.st_size);
+
+	rd = read(f, rval, st.st_size);
+	if (rd != st.st_size) {
+		log_err("error loading file to memory, rd = %d", rd);
+		delete[] rval;
+		return NULL;
+	}
+
+	return rval;
+}
+
 }

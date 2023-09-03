@@ -19,16 +19,21 @@
  */
 
 #include "trace.hh"
+#include "getopts.hh"
+
 #include <iostream>
 #include <cstdio>
 
-#define ANSI_COLOR_RED     "\x1b[1;31m"
-#define ANSI_COLOR_GREEN   "\x1b[1;32m"
-#define ANSI_COLOR_YELLOW  "\x1b[1;33m"
-#define ANSI_COLOR_BLUE    "\x1b[1;34m"
-#define ANSI_COLOR_MAGENTA "\x1b[1;35m"
-#define ANSI_COLOR_CYAN    "\x1b[1;36m"
-#define ANSI_COLOR_RESET   "\x1b[0m"
+#define ANSI_COLOR_RED		"\x1b[31m"
+#define ANSI_COLOR_GREEN	"\x1b[32m"
+#define ANSI_COLOR_YELLOW	"\x1b[33m"
+#define ANSI_COLOR_BLUE		"\x1b[34m"
+#define ANSI_COLOR_MAGENTA	"\x1b[35m"
+#define ANSI_COLOR_CYAN		"\x1b[36m"
+#define ANSI_COLOR_RESET	"\x1b[0m"
+
+#define ANSI_COLOR_IMPORTANT	"\x1b[1;35m"
+#define ANSI_COLOR_ERROR	"\x1b[1;31m"
 
 using namespace std;
 
@@ -46,7 +51,16 @@ void log_info(const char *format, ...)
 	va_list args;
 
 	va_start(args, format);
-	log(ANSI_COLOR_GREEN, format, args);
+	log(ANSI_COLOR_YELLOW, format, args);
+	va_end(args);
+}
+
+void log_imp(const char *format, ...)
+{
+	va_list args;
+
+	va_start(args, format);
+	log(ANSI_COLOR_IMPORTANT, format, args);
 	va_end(args);
 }
 
@@ -55,7 +69,7 @@ void log_wrn(const char *format, ...)
 	va_list args;
 
 	va_start(args, format);
-	log(ANSI_COLOR_YELLOW, format, args);
+	log(ANSI_COLOR_MAGENTA, format, args);
 	va_end(args);
 }
 
@@ -63,9 +77,11 @@ void log_dbg(const char *format, ...)
 {
 	va_list args;
 
-	va_start(args, format);
-	log(ANSI_COLOR_CYAN, format, args);
-	va_end(args);
+	if (opts::get().verbose) {
+		va_start(args, format);
+		log(ANSI_COLOR_RESET, format, args);
+		va_end(args);
+	}
 }
 
 void log_err(const char *format, ...)

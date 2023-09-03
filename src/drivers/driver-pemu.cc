@@ -21,37 +21,24 @@
 #include "driver-pemu.hh"
 #include "utils.hh"
 #include "trace.hh"
+#include "bdm-defs.hh"
+
 #include <cstring>
 #include <libusb-1.0/libusb.h>
 
 using namespace trace;
 using namespace utils;
 
-static const unsigned char REP_VERSION_INFO[] = {0x99, 0x66, 0x00, 0x64};
+static constexpr unsigned char REP_VERSION_INFO[] = {0x99, 0x66, 0x00, 0x64};
 
-#define CMD_PEMU_GET_VERSION_STR	0x0b
-#define CMD_PEMU_BDM_REG_R		0x13
+static constexpr int OFS_BDM = 5;
+static constexpr int PEMU_CMD_REPLY_LEN = 4;
+static constexpr int PEMU_STD_PKT_SIZE = 256;
 
-#define PEMU_CMD_REPLY_LEN		4
-
-#define PEMU_STD_PKT_SIZE		256
-
-#define OFFS_BDM_BUFF			5
-
-enum pemu_commands {
-	CMD_BDM_GO = 0x0c00,
-	CMD_BDM_READ_CPU_AD_REG = 0x2180,
-	CMD_BDM_READ_BDM_REG = 0x2d80,
-	CMD_BDM_READ_SCM_REG = 0x2980,
-	CMD_BDM_READ_MEM_BYTE = 0x1900,
-	CMD_BDM_READ_MEM_WORD = 0x1940,
-	CMD_BDM_READ_MEM_LONG = 0x1980,
-	CMD_BDM_WRITE_CPU_AD_REG = 0x2080,
-	CMD_BDM_WRITE_BDM_REG = 0x2c80,
-	CMD_BDM_WRITE_SCM_REG = 0x2880,
-	CMD_BDM_WRITE_MEM_BYTE = 0x1800,
-	CMD_BDM_WRITE_MEM_WORD = 0x1840,
-	CMD_BDM_WRITE_MEM_LONG = 0x1880,
+enum pemu_pefiuxes {
+	CMD_PEMU_RESET = 0x01,
+	CMD_PEMU_GET_VERSION_STR = 0x0b,
+	CMD_PEMU_BDM_REG_R = 0x13,
 };
 
 enum pemu_pkt_types {
@@ -65,6 +52,17 @@ enum pemu_cmd_type {
 	CMD_TYPE_IFACE = 0x04,
 	CMD_TYPE_DATA = 0x07,
 };
+
+/*
+ * pemu sends pre-commands based on bdm command to be sent
+ */
+driver_pemu::driver_pemu(libusb_device *device)
+{
+	dev = device;
+
+	bdm_prefixes[CMD_BDMCF_RDAREG] =
+		tuple(CMD_PEMU_BDM_REG_R, CMD_TYPE_DATA);
+}
 
 int driver_pemu::send_and_recv(int tx_count, int rx_count)
 {
@@ -104,6 +102,44 @@ int driver_pemu::extract_info(unsigned char *offset, int pos, char *res)
 	return 0;
 }
 
+int driver_pemu::send_generic(uint8_t cmd_type, uint16_t len)
+{
+	*(uint16_t *)&obuf[0] = ntohs(PEMU_PT_CMD);
+	*(uint16_t *)&obuf[2] = ntohs(len + 1);
+	obuf[4] = cmd_type;
+
+	if (send_and_recv(PEMU_STD_PKT_SIZE, PEMU_STD_PKT_SIZE) != 0)
+		return 1;
+
+	return 0;
+}
+
+int driver_pemu::xfer_bdm_data(char *io_buff, int size)
+{
+	int midx = ntohs(*(uint16_t *)io_buff) & 0xfff0;
+
+	if (bdm_prefixes.find(midx) == bdm_prefixes.end()) {
+		log_err("bdm prefix not found");
+		return 1;
+	}
+
+	obuf[OFS_BDM] = std::get<0>(bdm_prefixes[midx]);
+
+	memcpy(&obuf[OFS_BDM + 1], io_buff, size);
+	send_generic(std::get<1>(bdm_prefixes[midx]), size);
+	memcpy(io_buff, &ibuf[OFS_BDM], PEMU_STD_PKT_SIZE - OFS_BDM);
+
+	return 0;
+}
+
+void driver_pemu::send_reset(bool state)
+{
+	obuf[OFS_BDM] = CMD_PEMU_RESET;
+	obuf[OFS_BDM + 1] = state ? 0xf0 : 0xf8;
+
+	send_generic(CMD_TYPE_DATA, 2);
+}
+
 int driver_pemu::get_programmer_info()
 {
 	int err;
@@ -111,7 +147,7 @@ int driver_pemu::get_programmer_info()
 
 	log_dbg("%s() entering", __func__);
 
-	memset(obuf, 0, 256);
+	memset(obuf, 0, PEMU_STD_PKT_SIZE);
 
 	*(uint16_t *)&obuf[0] = ntohs(PEMU_PT_GENERIC);
 	*(uint16_t *)&obuf[2] = ntohs(2);
@@ -140,67 +176,6 @@ int driver_pemu::get_programmer_info()
 	return 0;
 }
 
-int driver_pemu::send_generic(uint8_t cmd_type, uint16_t len)
-{
-	*(uint16_t *)&obuf[0] = ntohs(PEMU_PT_CMD);
-	*(uint16_t *)&obuf[2] = ntohs(len + 1);
-	obuf[4] = cmd_type;
-
-	if (send_and_recv(PEMU_STD_PKT_SIZE, PEMU_STD_PKT_SIZE) != 0)
-		return 1;
-
-	return 0;
-}
-
-uint32_t driver_pemu::bdm_read_ad_reg(uint8_t reg)
-{
-	uint8_t *buff = &obuf[OFFS_BDM_BUFF];
-
-	buff[0] = CMD_PEMU_BDM_REG_R;
-	*(uint16_t *)&buff[1] = ntohs(CMD_BDM_READ_CPU_AD_REG | reg);
-
-	memset(ibuf, 0, 256);
-
-	send_generic(CMD_TYPE_DATA, 3);
-
-	for (int i = 0; i < 64; ++i) {
-		printf("%02x ", (int)ibuf[i] & 0xff);
-	}
-
-	printf("\n");
-
-	return ntohl(*(uint32_t *)ibuf);
-}
-
-int driver_pemu::check_connected_cpu()
-{
-	uint32_t d0, d1;
-
-	d0 = bdm_read_ad_reg(CF_D0);
-	d1 = bdm_read_ad_reg(CF_D1);
-
-	printf("%08x d0, %08x d1", d0, d1);
-
-	if (d0 == 0xffffffff || d1 == 0xffffffff)
-		return -1;
-
-	if ((d0 & 0x0f) != 0xf)
-		return -1;
-
-	if (((d0 & 0xf0) >> 4) != 0x02)
-		return -1;
-
-	if (!(d0 & (1 << 11)))
-		return -1;
-
-	if (((d0 & 0xf00000) >> 20) != 0x4)
-		return -1;
-
-	log_info("mcf5441x detected, D+PSTB, MMU, ISA_C");
-
-	return 0;
-}
-
 int driver_pemu::probe()
 {
 	int err;
@@ -213,13 +188,6 @@ int driver_pemu::probe()
 	err = libusb_open(dev, &handle);
 	if (err) {
 		log_err("can't create device handle, err %d: %s",
-			err, libusb_strerror(err));
-		return -1;
-	}
-
-	err = libusb_reset_device(handle);
-	if(err) {
-		log_err("cannot reset device, err %d: %s",
 			err, libusb_strerror(err));
 		return -1;
 	}
