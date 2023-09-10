@@ -10,6 +10,7 @@ void log_info(const char *format, ...);
 void log_wrn(const char *format, ...);
 void log_dbg(const char *format, ...);
 void log_err(const char *format, ...);
+void log_buffer(const unsigned char *data, int size);
 };
 
 #endif /* trace_hh */

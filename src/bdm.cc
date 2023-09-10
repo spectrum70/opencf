@@ -35,13 +35,48 @@ void bdm_ops::reset(bool state)
 	drv->send_reset(state);
 }
 
+uint32_t bdm_ops::read_dm_reg(uint8_t reg)
+{
+	memset(buff, 0, 2);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_RDMREG | reg);
+
+	drv->xfer_bdm_data(buff, 2);
+
+	return ntohl(*(uint32_t *)buff);
+}
+
+uint32_t bdm_ops::write_ad_reg(uint8_t reg, uint32_t value)
+{
+	memset(buff, 0, 6);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WDAREG | reg);
+	*(uint32_t *)&buff[2] = ntohl(value);
+
+	drv->xfer_bdm_data(buff, 6);
+
+	return ntohl(*(uint32_t *)buff);;
+}
+
 uint32_t bdm_ops::read_ad_reg(uint8_t reg)
 {
-	memset(buff, 0, 256);
+	memset(buff, 0, 2);
 
 	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_RDAREG | reg);
 
 	drv->xfer_bdm_data(buff, 2);
 
 	return ntohl(*(uint32_t *)buff);
+}
+
+/*
+ * Write a memory buffer to a specific location
+ *
+ * P&E m.u. has propertary all-inclusive bdm-father commands for memory write,
+ * i am assuming they are more performant then their bdm dump/write friends,
+ * so i am using them
+ */
+int bdm_ops::load_segment(uint8_t *data, uint32_t dest, uint32_t size)
+{
+	return drv->send_big_block(data, dest, size);
 }

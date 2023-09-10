@@ -19,14 +19,16 @@ private:
 	void get_input_line(string &line);
 	void process_line(string &line);
 
-	void cmd_load();
-	void cmd_exit();
+	int cmd_load();
+	int cmd_exit();
+	int cmd_read();
+	int cmd_write();
 
 private:
 	bdm_ops *bdm;
 	vector<string> args;
 
-	typedef void(parser::*cmd)();
+	typedef int(parser::*cmd)();
 	map<string, cmd> mcmd;
 };
 

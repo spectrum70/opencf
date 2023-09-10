@@ -32,21 +32,66 @@ parser::parser(bdm_ops *b): bdm(b)
 {
 	mcmd["load"] = &parser::cmd_load;
 	mcmd["exit"] = &parser::cmd_exit;
+	mcmd["quit"] = &parser::cmd_exit;
+	mcmd["read"] = &parser::cmd_read;
+	mcmd["write"] = &parser::cmd_write;
 }
 
-void parser::cmd_load()
+int parser::cmd_load()
 {
 	char *edata;
 	elf e;
 
 	edata = e.load_elf(args[0]);
 	if (!edata)
-		return;
+		return 1;
+
+	return 0;
 }
 
-void parser::cmd_exit()
+int parser::cmd_exit()
 {
 	exit(0);
+}
+
+int parser::cmd_read()
+{
+	if (args.size() < 2)
+		return 1;
+	if (args[0] == "reg") {
+		int reg_type = args[1][0];
+		int reg = args[1][1];
+
+		if (reg < '0' || reg > '7')
+			return -1;
+
+		reg = reg - '0';
+
+		switch(reg_type) {
+		case 'd':
+		case 'D':
+			reg += CF_D0;
+			break;
+		case 'a':
+		case 'A':
+			reg += CF_A0;
+			break;
+		default:
+			return -1;
+		}
+
+		int rval = bdm->read_ad_reg(reg);
+
+		printf("%08x\n", rval);
+	} else
+		return 1;
+
+	return 0;
+}
+
+int parser::cmd_write()
+{
+	return 0;
 }
 
 void parser::prompt()
@@ -88,7 +133,9 @@ void parser::process_line(string &line)
 		return;
 	}
 
-	(this->*mcmd[cmd])();
+	if ((this->*mcmd[cmd])()) {
+		log_err("invalid command");
+	}
 }
 
 void parser::get_input_line(string &line)
@@ -105,6 +152,7 @@ int parser::run()
 	for (;;) {
 		prompt();
 		get_input_line(line);
-		process_line(line);
+		if (line.size())
+			process_line(line);
 	}
 }

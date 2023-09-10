@@ -9,6 +9,7 @@ enum bdmcf_commands {
 	CMD_BDMCF_RCREG = 0x2980,
 	CMD_BDMCF_WCREG = 0x2880,
 	CMD_BDMCF_RDAREG = 0x2180,
+	CMD_BDMCF_WDAREG = 0x2080,
 };
 
 #endif /* bdm_defs_hh */

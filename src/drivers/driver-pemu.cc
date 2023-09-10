@@ -34,11 +34,18 @@ static constexpr unsigned char REP_VERSION_INFO[] = {0x99, 0x66, 0x00, 0x64};
 static constexpr int OFS_BDM = 5;
 static constexpr int PEMU_CMD_REPLY_LEN = 4;
 static constexpr int PEMU_STD_PKT_SIZE = 256;
+static constexpr int PEMU_MAX_PKT_SIZE = 1280;
+static constexpr int PEMU_MAX_BIG_BLOCK	= 0x4a8;
 
-enum pemu_pefiuxes {
+enum pemu_prefixes {
 	CMD_PEMU_RESET = 0x01,
 	CMD_PEMU_GET_VERSION_STR = 0x0b,
+	CMD_PEMU_BDM_MEM_R = 0x11,
+	CMD_PEMU_BDM_MEM_W = 0x15,
 	CMD_PEMU_BDM_REG_R = 0x13,
+	CMD_PEMU_BDM_REG_W = 0x16,
+	CMD_PEMU_GET_ALL_CPU_REGS = 0x18,
+	CMD_PEMU_W_MEM_BLOCK = 0x19,
 };
 
 enum pemu_pkt_types {
@@ -62,6 +69,10 @@ driver_pemu::driver_pemu(libusb_device *device)
 
 	bdm_prefixes[CMD_BDMCF_RDAREG] =
 		tuple(CMD_PEMU_BDM_REG_R, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_RDMREG] =
+		tuple(CMD_PEMU_BDM_REG_R, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_WDAREG] =
+		tuple(CMD_PEMU_BDM_REG_W, CMD_TYPE_DATA);
 }
 
 int driver_pemu::send_and_recv(int tx_count, int rx_count)
@@ -130,6 +141,38 @@ int driver_pemu::xfer_bdm_data(char *io_buff, int size)
 	memcpy(io_buff, &ibuf[OFS_BDM], PEMU_STD_PKT_SIZE - OFS_BDM);
 
 	return 0;
+}
+
+int driver_pemu::send_big_block(uint8_t *data, uint32_t dest_addr, int size)
+{
+	uint16_t to_send, remainder;
+
+	remainder = size % 4;
+
+	while (size >= 4) {
+		if (size > PEMU_MAX_BIG_BLOCK)
+			to_send = PEMU_MAX_BIG_BLOCK;
+		else
+			to_send = size - remainder;
+
+		*(uint16_t *)&obuf[0] = ntohs(PEMU_PT_WBLOCK);
+		obuf[4] = CMD_TYPE_DATA;
+		obuf[5] = CMD_PEMU_W_MEM_BLOCK;
+		*(uint16_t *)&obuf[2] = ntohs(to_send + 8);
+		*(uint16_t *)&obuf[6] = ntohs(to_send);
+		*(uint32_t *)&obuf[8] = ntohl(dest_addr);
+
+		memcpy(&obuf[12], data, to_send);
+
+		/* pemu wants a padded packet */
+		send_and_recv(PEMU_MAX_PKT_SIZE, PEMU_MAX_PKT_SIZE);
+
+		size -= to_send;
+		data += to_send;
+		dest_addr += to_send;
+	} while (remainder--);
+
+	//pemu_write_mem_byte(dest_addr++, *data++);
 }
 
 void driver_pemu::send_reset(bool state)

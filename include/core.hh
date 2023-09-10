@@ -22,6 +22,7 @@ public:
 	int run();
 
 private:
+	int examine();
 	int get_programmer_info();
 	int get_cpu_info();
 
