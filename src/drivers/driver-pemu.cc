@@ -73,6 +73,10 @@ driver_pemu::driver_pemu(libusb_device *device)
 		tuple(CMD_PEMU_BDM_REG_R, CMD_TYPE_DATA);
 	bdm_prefixes[CMD_BDMCF_WDAREG] =
 		tuple(CMD_PEMU_BDM_REG_W, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_RD_MEM_B] =
+		tuple(CMD_PEMU_BDM_MEM_R, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_WR_MEM_B] =
+		tuple(CMD_PEMU_BDM_MEM_W, CMD_TYPE_DATA);
 }
 
 int driver_pemu::send_and_recv(int tx_count, int rx_count)
@@ -173,6 +177,8 @@ int driver_pemu::send_big_block(uint8_t *data, uint32_t dest_addr, int size)
 	} while (remainder--);
 
 	//pemu_write_mem_byte(dest_addr++, *data++);
+
+	return 0;
 }
 
 void driver_pemu::send_reset(bool state)

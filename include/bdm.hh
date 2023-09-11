@@ -26,6 +26,8 @@ public:
 	uint32_t read_ad_reg(uint8_t reg);
 	uint32_t read_dm_reg(uint8_t reg);
 	uint32_t write_ad_reg(uint8_t reg, uint32_t value);
+	uint32_t read_mem_byte(uint32_t address);
+	uint32_t write_mem_byte(uint32_t address, uint8_t value);
 	int load_segment(uint8_t *data, uint32_t dest, uint32_t size);
 
 private:

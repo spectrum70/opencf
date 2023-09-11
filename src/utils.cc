@@ -20,6 +20,9 @@
 
 #include "utils.hh"
 
+#include <iomanip>
+#include <sstream>
+
 namespace utils {
 
 uint16_t ntohs(uint16_t val)
@@ -33,6 +36,20 @@ uint32_t ntohl(uint32_t val)
 	       ((val << 8) & 0x00ff0000) |
 	       ((val >> 8) & 0x0000ff00) |
 	       (val >> 24);
+}
+
+unsigned int str_to_bin(string &str)
+{
+	stringstream ss;
+	unsigned int rval;
+
+	ss << str;
+	if (str[0] == '0' && str[1] == 'x')
+		ss >> hex >> rval;
+	else
+		ss >> dec >> rval;
+
+	return rval;
 }
 
 }

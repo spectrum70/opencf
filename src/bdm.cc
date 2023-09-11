@@ -69,6 +69,33 @@ uint32_t bdm_ops::read_ad_reg(uint8_t reg)
 	return ntohl(*(uint32_t *)buff);
 }
 
+uint32_t bdm_ops::read_mem_byte(uint32_t address)
+{
+	memset(buff, 0, 6);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_RD_MEM_B);
+	*(uint32_t *)&buff[2] = ntohl(address);
+
+	drv->xfer_bdm_data(buff, 6);
+
+	return ntohl(*(uint32_t *)buff);
+}
+
+uint32_t bdm_ops::write_mem_byte(uint32_t address, uint8_t value)
+{
+	memset(buff, 0, 10);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WR_MEM_B);
+	*(uint32_t *)&buff[2] = ntohl(address);
+
+	/* heh, pemu wants a 16 bit value here */
+	*(uint16_t *)&buff[6] = ntohs(value);
+
+	drv->xfer_bdm_data(buff, 10);
+
+	return 0;
+}
+
 /*
  * Write a memory buffer to a specific location
  *

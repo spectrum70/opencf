@@ -19,6 +19,7 @@
  */
 
 #include "parser.hh"
+#include "utils.hh"
 #include "trace.hh"
 #include "elf.hh"
 
@@ -27,6 +28,7 @@
 #include <unistd.h>
 
 using namespace trace;
+using namespace utils;
 
 parser::parser(bdm_ops *b): bdm(b)
 {
@@ -40,7 +42,7 @@ parser::parser(bdm_ops *b): bdm(b)
 int parser::cmd_load()
 {
 	char *edata;
-	elf e;
+	elf e(bdm);
 
 	edata = e.load_elf(args[0]);
 	if (!edata)
@@ -83,6 +85,18 @@ int parser::cmd_read()
 		int rval = bdm->read_ad_reg(reg);
 
 		printf("%08x\n", rval);
+
+
+	} else if (args[0] == "mem.b") {
+		string address = args[1];
+		int addr;
+
+		addr = str_to_bin(address);
+
+		int rval = bdm->read_mem_byte(addr);
+
+		printf("%08x\n", rval);
+		printf("%02x\n", (rval >> 16) & 0xff);
 	} else
 		return 1;
 
@@ -91,6 +105,26 @@ int parser::cmd_read()
 
 int parser::cmd_write()
 {
+	if (args.size() < 3)
+		return 1;
+
+	if (args[0] == "mem.b") {
+		string address = args[1];
+		string value = args[2];
+		int addr, val;
+
+		addr = str_to_bin(address);
+		val = str_to_bin(value);
+
+		log_dbg("val = %d\n", val);
+
+		if (val > 255)
+			return 1;
+
+		bdm->write_mem_byte(addr, val);
+
+	}
+
 	return 0;
 }
 

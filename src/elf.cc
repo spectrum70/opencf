@@ -64,10 +64,13 @@ int elf::load_program_headers(const char *offs, int entries)
 		int type = ntohl(phdr->p_type);
 		int flags = ntohl(phdr->p_flags);
 
-		if (type == PT_LOAD && flags == (PF_R | PF_X))
+		if (type == PT_LOAD && flags == (PF_R | PF_X)) {
 			log_dbg("%s() %08x %04x", __func__,
 				ntohl(phdr->p_offset),
 				ntohl(phdr->p_filesz));
+
+			//bdm->load_segment(phdr->p_offset, phdr->p_filesz);
+		}
 
 		ptr += sizeof(Elf32_Phdr);
 	}
