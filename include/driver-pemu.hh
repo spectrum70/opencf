@@ -19,8 +19,9 @@ struct driver_pemu : public driver {
 	virtual int probe();
 	virtual int get_programmer_info();
 	virtual int xfer_bdm_data(char *io_buff, int size);
-	virtual void send_reset(bool state);
 	virtual int send_big_block(uint8_t *data, uint32_t dest_addr, int size);
+	virtual void send_reset(bool state);
+	virtual void send_go();
 
 private:
 	int extract_info(unsigned char *offset, int pos, char *res);

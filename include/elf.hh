@@ -11,7 +11,8 @@ struct elf
 	elf(bdm_ops *b) : bdm(b) {}
 
 	char *load_elf(const string &path);
-	int load_program_headers(const char *offs, int entries);
+	int load_program_headers(const char *elf,
+				 const char *offs, int entries);
 
 private:
 	bdm_ops *bdm;

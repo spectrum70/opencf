@@ -17,9 +17,10 @@ struct driver {
 	virtual int probe() = 0;
 	virtual int get_programmer_info() = 0;
 	virtual int xfer_bdm_data(char *io_buff, int len) = 0;
-	virtual void send_reset(bool state) = 0;
 	virtual int send_big_block(uint8_t *data, uint32_t dest_addr,
 				   int size) = 0;
+	virtual void send_reset(bool state) = 0;
+	virtual void send_go() = 0;
 
 protected:
 	libusb_device *dev;

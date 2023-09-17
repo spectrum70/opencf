@@ -37,6 +37,7 @@ parser::parser(bdm_ops *b): bdm(b)
 	mcmd["quit"] = &parser::cmd_exit;
 	mcmd["read"] = &parser::cmd_read;
 	mcmd["write"] = &parser::cmd_write;
+	mcmd["go"] = &parser::cmd_go;
 }
 
 int parser::cmd_load()
@@ -47,6 +48,13 @@ int parser::cmd_load()
 	edata = e.load_elf(args[0]);
 	if (!edata)
 		return 1;
+
+	return 0;
+}
+
+int parser::cmd_go()
+{
+	bdm->go();
 
 	return 0;
 }

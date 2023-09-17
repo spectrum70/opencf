@@ -52,11 +52,11 @@ using namespace utils;
  *   01     .bss
  */
 
-int elf::load_program_headers(const char *offs, int entries)
+int elf::load_program_headers(const char *elf, const char *offs, int entries)
 {
 	char *ptr = (char *)offs;
 
-	log_dbg("%s() Offset   FileSiz", __func__);
+	log_dbg("%s() Offset   FileSiz   vaddr    paddr", __func__);
 
 	while (entries--) {
 		Elf32_Phdr *phdr = (Elf32_Phdr *)ptr;
@@ -65,11 +65,19 @@ int elf::load_program_headers(const char *offs, int entries)
 		int flags = ntohl(phdr->p_flags);
 
 		if (type == PT_LOAD && flags == (PF_R | PF_X)) {
-			log_dbg("%s() %08x %04x", __func__,
+			log_dbg("%s() %08x %04x      %08x %08x", __func__,
 				ntohl(phdr->p_offset),
-				ntohl(phdr->p_filesz));
+				ntohl(phdr->p_filesz),
+				ntohl(phdr->p_vaddr),
+				ntohl(phdr->p_paddr));
 
-			//bdm->load_segment(phdr->p_offset, phdr->p_filesz);
+			//log_buffer((unsigned char *)(elf + ntohl(phdr->p_offset)),
+			//	   ntohl(phdr->p_filesz));
+
+			bdm->load_segment((unsigned char *)
+						elf + ntohl(phdr->p_offset),
+						ntohl(phdr->p_paddr),
+						ntohl(phdr->p_filesz));
 		}
 
 		ptr += sizeof(Elf32_Phdr);
@@ -111,7 +119,7 @@ char *elf::load_elf(const string &path)
 					ntohl(ehdr->e_phoff));
 
 	if (ehdr->e_phoff)
-		load_program_headers(&elf[ntohl(ehdr->e_phoff)],
+		load_program_headers(elf, &elf[ntohl(ehdr->e_phoff)],
 				     ntohs(ehdr->e_phnum));
 
 	return elf;

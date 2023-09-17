@@ -23,6 +23,7 @@ private:
 	int cmd_exit();
 	int cmd_read();
 	int cmd_write();
+	int cmd_go();
 
 private:
 	bdm_ops *bdm;

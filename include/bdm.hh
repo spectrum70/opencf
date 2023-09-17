@@ -37,6 +37,7 @@ public:
 	bdm_ops(driver *current_driver);
 
 	void reset(bool state);
+	void go();
 	uint32_t read_ad_reg(uint8_t reg);
 	uint32_t read_dm_reg(uint8_t reg);
 	uint32_t write_ad_reg(uint8_t reg, uint32_t value);

@@ -97,19 +97,17 @@ void log_buffer(const unsigned char *data, int size)
 {
 	int i = 0;
 
-	printf(ANSI_COLOR_YELLOW);
-	printf("%08x:", i);
-	printf(ANSI_COLOR_CYAN);
-
 	for (; i < size; ++i) {
 		if (!(i%16)) {
+			if (i)
+				printf("\n");
 			printf(ANSI_COLOR_YELLOW);
-			printf("\n%08x:", i);
+			printf("%08x:", i);
 			printf(ANSI_COLOR_CYAN);
 		}
 		printf("%02x ", (int)data[i]);
 	}
-
+	printf("\n");
 	printf(ANSI_COLOR_RESET);
 }
 

@@ -35,6 +35,11 @@ void bdm_ops::reset(bool state)
 	drv->send_reset(state);
 }
 
+void bdm_ops::go()
+{
+	drv->send_go();
+}
+
 uint32_t bdm_ops::read_dm_reg(uint8_t reg)
 {
 	memset(buff, 0, 2);

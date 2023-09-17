@@ -39,6 +39,7 @@ static constexpr int PEMU_MAX_BIG_BLOCK	= 0x4a8;
 
 enum pemu_prefixes {
 	CMD_PEMU_RESET = 0x01,
+	CMD_PEMU_GO = 0x02,
 	CMD_PEMU_GET_VERSION_STR = 0x0b,
 	CMD_PEMU_BDM_MEM_R = 0x11,
 	CMD_PEMU_BDM_REG_R = 0x13,
@@ -174,14 +175,15 @@ int driver_pemu::send_big_block(uint8_t *data, uint32_t dest_addr, int size)
 		memcpy(&obuf[12], data, to_send);
 
 		/* pemu wants a padded packet */
-		send_and_recv(PEMU_MAX_PKT_SIZE, PEMU_MAX_PKT_SIZE);
+		send_and_recv(PEMU_MAX_PKT_SIZE, PEMU_STD_PKT_SIZE);
 
 		size -= to_send;
 		data += to_send;
 		dest_addr += to_send;
-	} while (remainder--);
+	}
 
-	//pemu_write_mem_byte(dest_addr++, *data++);
+	//while (remainder--)
+		//pemu_write_mem_byte(dest_addr++, *data++);
 
 	return 0;
 }
@@ -192,6 +194,20 @@ void driver_pemu::send_reset(bool state)
 	obuf[OFS_BDM + 1] = state ? 0xf0 : 0xf8;
 
 	send_generic(CMD_TYPE_DATA, 2);
+}
+
+void driver_pemu::send_go()
+{
+	obuf[OFS_BDM] = CMD_PEMU_GO;
+	obuf[OFS_BDM + 1] = 0xfc;
+	*(uint16_t *)&obuf[OFS_BDM + 2] = ntohs(CMD_BDMCF_GO);
+
+	send_generic(CMD_TYPE_DATA, 4);
+
+	obuf[OFS_BDM] = CMD_PEMU_BDM_REG_R;
+	*(uint16_t *)&obuf[OFS_BDM + 1] = ntohs(CMD_BDMCF_RDMREG);
+
+	send_generic(CMD_TYPE_DATA, 3);
 }
 
 int driver_pemu::get_programmer_info()
