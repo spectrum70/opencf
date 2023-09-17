@@ -17,6 +17,20 @@ enum bdm_cf26_registers {
 	BDM_REG_XCSR = 0x01,
 };
 
+/* Control reg types */
+enum  cr_type {
+	crt_cacr = 0x002,
+	crt_acr0 = 0x004,
+	crt_acr1 = 0x005,
+	crt_vbr = 0x801,
+	crt_macsr = 0x804,
+	crt_mask = 0x805,
+	crt_acc = 0x806,
+	crt_sr = 0x80e,
+	crt_pc = 0x80f,
+	crt_rambar = 0xc04,
+};
+
 class bdm_ops
 {
 public:
@@ -28,6 +42,8 @@ public:
 	uint32_t write_ad_reg(uint8_t reg, uint32_t value);
 	uint32_t read_mem_byte(uint32_t address);
 	uint32_t write_mem_byte(uint32_t address, uint8_t value);
+	uint32_t read_ctrl_reg(cr_type type);
+	uint32_t write_ctrl_reg(cr_type type, uint32_t value);
 	int load_segment(uint8_t *data, uint32_t dest, uint32_t size);
 
 private:

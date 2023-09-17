@@ -41,8 +41,9 @@ enum pemu_prefixes {
 	CMD_PEMU_RESET = 0x01,
 	CMD_PEMU_GET_VERSION_STR = 0x0b,
 	CMD_PEMU_BDM_MEM_R = 0x11,
-	CMD_PEMU_BDM_MEM_W = 0x15,
 	CMD_PEMU_BDM_REG_R = 0x13,
+	CMD_PEMU_BDM_SCR_W = 0x14,
+	CMD_PEMU_BDM_MEM_W = 0x15,
 	CMD_PEMU_BDM_REG_W = 0x16,
 	CMD_PEMU_GET_ALL_CPU_REGS = 0x18,
 	CMD_PEMU_W_MEM_BLOCK = 0x19,
@@ -77,6 +78,10 @@ driver_pemu::driver_pemu(libusb_device *device)
 		tuple(CMD_PEMU_BDM_MEM_R, CMD_TYPE_DATA);
 	bdm_prefixes[CMD_BDMCF_WR_MEM_B] =
 		tuple(CMD_PEMU_BDM_MEM_W, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_RCREG] =
+		tuple(CMD_PEMU_BDM_MEM_R, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_WCREG] =
+		tuple(CMD_PEMU_BDM_SCR_W, CMD_TYPE_DATA);
 }
 
 int driver_pemu::send_and_recv(int tx_count, int rx_count)

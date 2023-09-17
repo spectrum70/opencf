@@ -88,8 +88,33 @@ uint32_t bdm_ops::write_mem_byte(uint32_t address, uint8_t value)
 	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WR_MEM_B);
 	*(uint32_t *)&buff[2] = ntohl(address);
 
-	/* heh, pemu wants a 16 bit value here */
+	/* heh, pemu wants a 16 bit value here, and 10 total to send */
 	*(uint16_t *)&buff[6] = ntohs(value);
+
+	drv->xfer_bdm_data(buff, 10);
+
+	return 0;
+}
+
+uint32_t bdm_ops::read_ctrl_reg(cr_type type)
+{
+	memset(buff, 0, 6);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_RCREG);
+	*(uint32_t *)&buff[2] = ntohl(type);
+
+	drv->xfer_bdm_data(buff, 6);
+
+	return ntohl(*(uint32_t *)buff);
+}
+
+uint32_t bdm_ops::write_ctrl_reg(cr_type type, uint32_t value)
+{
+	memset(buff, 0, 10);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WCREG);
+	*(uint32_t *)&buff[2] = ntohl(type);
+	*(uint32_t *)&buff[6] = ntohl(value);
 
 	drv->xfer_bdm_data(buff, 10);
 

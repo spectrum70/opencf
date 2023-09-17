@@ -58,34 +58,40 @@ int parser::cmd_exit()
 
 int parser::cmd_read()
 {
+	int rval = -1;
+
 	if (args.size() < 2)
-		return 1;
+		return rval;
+
 	if (args[0] == "reg") {
-		int reg_type = args[1][0];
-		int reg = args[1][1];
+		if (args[1] == "rambar") {
+			rval = bdm->read_ctrl_reg(crt_rambar);
+		} else {
+			int reg_type = args[1][0];
+			int reg = args[1][1];
 
-		if (reg < '0' || reg > '7')
-			return -1;
+			if (reg < '0' || reg > '7')
+				return -1;
 
-		reg = reg - '0';
+			reg = reg - '0';
 
-		switch(reg_type) {
-		case 'd':
-		case 'D':
-			reg += CF_D0;
-			break;
-		case 'a':
-		case 'A':
-			reg += CF_A0;
-			break;
-		default:
-			return -1;
+			switch(reg_type) {
+			case 'd':
+			case 'D':
+				reg += CF_D0;
+				break;
+			case 'a':
+			case 'A':
+				reg += CF_A0;
+				break;
+			default:
+				return -1;
+			}
+
+			rval = bdm->read_ad_reg(reg);
 		}
 
-		int rval = bdm->read_ad_reg(reg);
-
 		printf("%08x\n", rval);
-
 
 	} else if (args[0] == "mem.b") {
 		string address = args[1];
@@ -105,13 +111,21 @@ int parser::cmd_read()
 
 int parser::cmd_write()
 {
+	int rval = -1;
+	int val;
+
 	if (args.size() < 3)
 		return 1;
 
-	if (args[0] == "mem.b") {
+	if (args[0] == "reg") {
+		if (args[1] == "rambar") {
+			val = str_to_bin(args[2]);
+			rval = bdm->write_ctrl_reg(crt_rambar, val);
+		}
+	} else if (args[0] == "mem.b") {
 		string address = args[1];
 		string value = args[2];
-		int addr, val;
+		int addr;
 
 		addr = str_to_bin(address);
 		val = str_to_bin(value);
@@ -121,11 +135,10 @@ int parser::cmd_write()
 		if (val > 255)
 			return 1;
 
-		bdm->write_mem_byte(addr, val);
-
+		rval = bdm->write_mem_byte(addr, val);
 	}
 
-	return 0;
+	return rval;
 }
 
 void parser::prompt()
