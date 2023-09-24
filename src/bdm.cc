@@ -138,9 +138,10 @@ uint32_t bdm_ops::write_ctrl_reg(cr_type type, uint32_t value)
 	return 0;
 }
 
-void bdm_ops::step()
+uint32_t bdm_ops::step()
 {
 	int value;
+	uint32_t rval;
 
 	switch (state) {
 	case st_halted:
@@ -155,10 +156,14 @@ void bdm_ops::step()
 		/* FALLTROUGH */
 	case st_step:
 		drv->send_go();
+		rval = read_ctrl_reg(crt_pc);
 		break;
 	case st_running:
+		rval = -1;
 		break;
 	}
+
+	return rval;
 }
 
 /*

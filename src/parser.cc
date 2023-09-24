@@ -84,7 +84,14 @@ int parser::cmd_go()
 
 int parser::cmd_step()
 {
-	bdm->step();
+	uint32_t rval;
+
+	rval = bdm->step();
+
+	if (rval != 0xffffffff) {
+		/* not running, show pc */
+		log_info("pc: %08x", rval);
+	}
 
 	return 0;
 }
@@ -249,12 +256,19 @@ void parser::get_input_line(string &line)
 				kstate = kst_ctrl;
 				break;
 			}
-			/* We ECHO the char */
-			cout << (char)c;
-			if (c != '\n') {
-				line.push_back(c);
+			if (c == 127) {
+				if (line.size()) {
+					cout << "\b \b" << flush;
+					line.resize(line.size() - 1);
+				}
 			} else {
-				goto line_in;
+				/* We ECHO the char */
+				cout << (char)c;
+				if (c != '\n') {
+					line.push_back(c);
+				} else {
+					goto line_in;
+				}
 			}
 			break;
 		case kst_ctrl:
@@ -269,7 +283,7 @@ void parser::get_input_line(string &line)
 
 				if (llen) {
 					for (i = 0; i < llen; ++i)
-						cout << '\b';
+						cout << "\b \b";
 				}
 
 				if (c == 'B') {

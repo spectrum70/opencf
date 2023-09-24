@@ -53,7 +53,7 @@ public:
 
 	void reset(bool state);
 	void go();
-	void step();
+	uint32_t step();
 	uint32_t read_dm_reg(uint8_t reg);
 	uint32_t write_dm_reg(uint8_t reg, uint32_t value);
 	uint32_t read_ad_reg(uint8_t reg);
