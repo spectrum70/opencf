@@ -51,16 +51,16 @@ uint32_t bdm_ops::read_dm_reg(uint8_t reg)
 	return ntohl(*(uint32_t *)buff);
 }
 
-uint32_t bdm_ops::write_ad_reg(uint8_t reg, uint32_t value)
+uint32_t bdm_ops::write_dm_reg(uint8_t reg, uint32_t value)
 {
 	memset(buff, 0, 6);
 
-	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WDAREG | reg);
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WDMREG | reg);
 	*(uint32_t *)&buff[2] = ntohl(value);
 
 	drv->xfer_bdm_data(buff, 6);
 
-	return ntohl(*(uint32_t *)buff);;
+	return ntohl(*(uint32_t *)buff);
 }
 
 uint32_t bdm_ops::read_ad_reg(uint8_t reg)
@@ -72,6 +72,18 @@ uint32_t bdm_ops::read_ad_reg(uint8_t reg)
 	drv->xfer_bdm_data(buff, 2);
 
 	return ntohl(*(uint32_t *)buff);
+}
+
+uint32_t bdm_ops::write_ad_reg(uint8_t reg, uint32_t value)
+{
+	memset(buff, 0, 6);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WDAREG | reg);
+	*(uint32_t *)&buff[2] = ntohl(value);
+
+	drv->xfer_bdm_data(buff, 6);
+
+	return ntohl(*(uint32_t *)buff);;
 }
 
 uint32_t bdm_ops::read_mem_byte(uint32_t address)
@@ -124,6 +136,29 @@ uint32_t bdm_ops::write_ctrl_reg(cr_type type, uint32_t value)
 	drv->xfer_bdm_data(buff, 10);
 
 	return 0;
+}
+
+void bdm_ops::step()
+{
+	int value;
+
+	switch (state) {
+	case st_halted:
+		/*
+		 * getting CRS and re-setting for step            *
+		 */
+		value = read_dm_reg(BDM_REG_CSR);
+		/* setting in step, no interrupt, emulator mode */
+		value |= (CSR_SSM | CSR_IPI | CSR_EMULATION);
+		write_dm_reg(BDM_REG_CSR, value);
+		state = st_step;
+		/* FALLTROUGH */
+	case st_step:
+		drv->send_go();
+		break;
+	case st_running:
+		break;
+	}
 }
 
 /*

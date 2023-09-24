@@ -30,6 +30,12 @@
 using namespace trace;
 using namespace utils;
 
+enum kstate {
+	kst_normal,
+	kst_ctrl,
+	kst_excape_sec,
+};
+
 parser::parser(bdm_ops *b): bdm(b)
 {
 	mcmd["load"] = &parser::cmd_load;
@@ -38,6 +44,23 @@ parser::parser(bdm_ops *b): bdm(b)
 	mcmd["read"] = &parser::cmd_read;
 	mcmd["write"] = &parser::cmd_write;
 	mcmd["go"] = &parser::cmd_go;
+	mcmd["step"] = &parser::cmd_step;
+	mcmd["st"] = &parser::cmd_step;
+
+	tcgetattr(STDIN_FILENO, &oldt);
+
+	newt = oldt;
+	newt.c_lflag &= ~(ICANON);
+	newt.c_lflag &= ~(ECHO);
+
+	/* Disable canonical mode */
+	tcsetattr( STDIN_FILENO, TCSANOW, &newt);
+}
+
+parser::~parser()
+{
+	/* Back to old config */
+	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
 }
 
 int parser::cmd_load()
@@ -59,6 +82,13 @@ int parser::cmd_go()
 	return 0;
 }
 
+int parser::cmd_step()
+{
+	bdm->step();
+
+	return 0;
+}
+
 int parser::cmd_exit()
 {
 	exit(0);
@@ -74,6 +104,8 @@ int parser::cmd_read()
 	if (args[0] == "reg") {
 		if (args[1] == "rambar") {
 			rval = bdm->read_ctrl_reg(crt_rambar);
+		} else if (args[1] == "pc") {
+			rval = bdm->read_ctrl_reg(crt_pc);
 		} else {
 			int reg_type = args[1][0];
 			int reg = args[1][1];
@@ -126,9 +158,11 @@ int parser::cmd_write()
 		return 1;
 
 	if (args[0] == "reg") {
+		val = str_to_bin(args[2]);
 		if (args[1] == "rambar") {
-			val = str_to_bin(args[2]);
 			rval = bdm->write_ctrl_reg(crt_rambar, val);
+		} else if (args[1] == "pc") {
+			rval = bdm->write_ctrl_reg(crt_pc, val);
 		}
 	} else if (args[0] == "mem.b") {
 		string address = args[1];
@@ -152,6 +186,11 @@ int parser::cmd_write()
 void parser::prompt()
 {
 	cout << "§ " << flush;
+}
+
+int parser::get_key_pressed()
+{
+	return getchar();
 }
 
 void parser::process_line(string &line)
@@ -195,7 +234,67 @@ void parser::process_line(string &line)
 
 void parser::get_input_line(string &line)
 {
-	getline(cin, line);
+	int c;
+	int kstate = kst_normal;
+	int ptr = -1, i, pos, llen = 0;
+
+	line.clear();
+
+	for (;;) {
+		c = get_key_pressed();
+		switch (kstate) {
+		case kst_normal:
+			/* ESC ? */
+			if (c == 27) {
+				kstate = kst_ctrl;
+				break;
+			}
+			/* We ECHO the char */
+			cout << (char)c;
+			if (c != '\n') {
+				line.push_back(c);
+			} else {
+				goto line_in;
+			}
+			break;
+		case kst_ctrl:
+			kstate = (c == '[') ? kst_excape_sec : kst_normal;
+			break;
+		case kst_excape_sec:
+			if (c == 'A' || c == 'B') {
+				int size = commands.size();
+
+				if (!size)
+					continue;
+
+				if (llen) {
+					for (i = 0; i < llen; ++i)
+						cout << '\b';
+				}
+
+				if (c == 'B') {
+					if (ptr)
+						ptr--;
+				} else {
+					if (ptr < (size - 1))
+						ptr++;
+				}
+				pos = commands.size() - ptr - 1;
+				line = commands[pos];
+				llen = line.size();
+
+				cout << line << flush;
+			}
+
+			kstate = kst_normal;
+			break;
+		}
+	}
+
+line_in:
+	llen = line.size();
+	/* Store into lines buffer */
+	commands.push_back(line);
 }
 
 int parser::run()

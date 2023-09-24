@@ -17,6 +17,15 @@ enum bdm_cf26_registers {
 	BDM_REG_XCSR = 0x01,
 };
 
+constexpr int CSR_SSM = (1 << 4);
+constexpr int CSR_IPI = (1 << 5);
+constexpr int CSR_NPL = (1 << 6);
+constexpr int CSR_EMULATION = (1 << 14);
+constexpr int CSR_MAP = (1 << 15);
+constexpr int CSR_BPKT = (1 << 24);
+constexpr int CSR_HALT = (1 << 25);
+constexpr int CSR_TRG = (1 << 26);
+
 /* Control reg types */
 enum  cr_type {
 	crt_cacr = 0x002,
@@ -31,6 +40,12 @@ enum  cr_type {
 	crt_rambar = 0xc04,
 };
 
+enum states {
+	st_halted,
+	st_step,
+	st_running,
+};
+
 class bdm_ops
 {
 public:
@@ -38,8 +53,10 @@ public:
 
 	void reset(bool state);
 	void go();
-	uint32_t read_ad_reg(uint8_t reg);
+	void step();
 	uint32_t read_dm_reg(uint8_t reg);
+	uint32_t write_dm_reg(uint8_t reg, uint32_t value);
+	uint32_t read_ad_reg(uint8_t reg);
 	uint32_t write_ad_reg(uint8_t reg, uint32_t value);
 	uint32_t read_mem_byte(uint32_t address);
 	uint32_t write_mem_byte(uint32_t address, uint8_t value);
@@ -48,6 +65,7 @@ public:
 	int load_segment(uint8_t *data, uint32_t dest, uint32_t size);
 
 private:
+	int state {};
 	driver *drv;
 	char buff[max_bdm_buff];
 };

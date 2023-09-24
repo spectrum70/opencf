@@ -71,7 +71,8 @@ int elf::load_program_headers(const char *elf, const char *offs, int entries)
 				ntohl(phdr->p_vaddr),
 				ntohl(phdr->p_paddr));
 
-			//log_buffer((unsigned char *)(elf + ntohl(phdr->p_offset)),
+			//log_buffer((unsigned char *)
+			//	  (elf + ntohl(phdr->p_offset)),
 			//	   ntohl(phdr->p_filesz));
 
 			bdm->load_segment((unsigned char *)
@@ -121,6 +122,10 @@ char *elf::load_elf(const string &path)
 	if (ehdr->e_phoff)
 		load_program_headers(elf, &elf[ntohl(ehdr->e_phoff)],
 				     ntohs(ehdr->e_phnum));
+
+	usleep(1000);
+
+	bdm->write_ctrl_reg(crt_pc, ntohl(ehdr->e_entry));
 
 	return elf;
 

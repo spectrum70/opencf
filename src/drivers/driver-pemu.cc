@@ -69,9 +69,11 @@ driver_pemu::driver_pemu(libusb_device *device)
 {
 	dev = device;
 
-	bdm_prefixes[CMD_BDMCF_RDAREG] =
-		tuple(CMD_PEMU_BDM_REG_R, CMD_TYPE_DATA);
 	bdm_prefixes[CMD_BDMCF_RDMREG] =
+		tuple(CMD_PEMU_BDM_REG_R, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_WDMREG] =
+		tuple(CMD_PEMU_BDM_REG_W, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_RDAREG] =
 		tuple(CMD_PEMU_BDM_REG_R, CMD_TYPE_DATA);
 	bdm_prefixes[CMD_BDMCF_WDAREG] =
 		tuple(CMD_PEMU_BDM_REG_W, CMD_TYPE_DATA);
