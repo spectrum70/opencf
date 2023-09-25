@@ -98,6 +98,30 @@ uint32_t bdm_ops::read_mem_byte(uint32_t address)
 	return ntohl(*(uint32_t *)buff);
 }
 
+uint32_t bdm_ops::read_mem_word(uint32_t address)
+{
+	memset(buff, 0, 6);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_RD_MEM_W);
+	*(uint32_t *)&buff[2] = ntohl(address);
+
+	drv->xfer_bdm_data(buff, 6);
+
+	return ntohl(*(uint32_t *)buff);
+}
+
+uint32_t bdm_ops::read_mem_long(uint32_t address)
+{
+	memset(buff, 0, 6);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_RD_MEM_L);
+	*(uint32_t *)&buff[2] = ntohl(address);
+
+	drv->xfer_bdm_data(buff, 6);
+
+	return ntohl(*(uint32_t *)buff);
+}
+
 uint32_t bdm_ops::write_mem_byte(uint32_t address, uint8_t value)
 {
 	memset(buff, 0, 10);
@@ -158,6 +182,7 @@ uint32_t bdm_ops::step()
 		drv->send_go();
 		rval = read_ctrl_reg(crt_pc);
 		break;
+	default:
 	case st_running:
 		rval = -1;
 		break;

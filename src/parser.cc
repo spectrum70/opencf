@@ -146,10 +146,27 @@ int parser::cmd_read()
 
 		addr = str_to_bin(address);
 
-		int rval = bdm->read_mem_byte(addr);
+		rval = bdm->read_mem_byte(addr);
+
+		printf("%02x\n", (rval >> 16) & 0xff);
+	} else if (args[0] == "mem.w") {
+		string address = args[1];
+		int addr;
+
+		addr = str_to_bin(address);
+
+		rval = bdm->read_mem_word(addr);
+
+		printf("%04x\n", (rval >> 16) & 0xffff);
+	} else if (args[0] == "mem.l") {
+		string address = args[1];
+		int addr;
+
+		addr = str_to_bin(address);
+
+		rval = bdm->read_mem_long(addr);
 
 		printf("%08x\n", rval);
-		printf("%02x\n", (rval >> 16) & 0xff);
 	} else
 		return 1;
 

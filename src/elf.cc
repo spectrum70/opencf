@@ -71,10 +71,6 @@ int elf::load_program_headers(const char *elf, const char *offs, int entries)
 				ntohl(phdr->p_vaddr),
 				ntohl(phdr->p_paddr));
 
-			//log_buffer((unsigned char *)
-			//	  (elf + ntohl(phdr->p_offset)),
-			//	   ntohl(phdr->p_filesz));
-
 			bdm->load_segment((unsigned char *)
 						elf + ntohl(phdr->p_offset),
 						ntohl(phdr->p_paddr),
@@ -92,7 +88,6 @@ char *elf::load_elf(const string &path)
 	Elf32_Ehdr *ehdr;
 
 	char *elf;
-	unsigned char *p;
 	uint16_t machine;
 
 	log_dbg("%s() loading: %s", __func__, path.c_str());
