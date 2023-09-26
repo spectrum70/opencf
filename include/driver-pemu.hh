@@ -22,6 +22,7 @@ struct driver_pemu : public driver {
 	virtual int send_big_block(uint8_t *data, uint32_t dest_addr, int size);
 	virtual void send_reset(bool state);
 	virtual void send_go();
+	virtual void send_halt();
 
 private:
 	int extract_info(unsigned char *offset, int pos, char *res);

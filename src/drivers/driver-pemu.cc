@@ -85,6 +85,10 @@ driver_pemu::driver_pemu(libusb_device *device)
 		tuple(CMD_PEMU_BDM_MEM_R, CMD_TYPE_DATA);
 	bdm_prefixes[CMD_BDMCF_WR_MEM_B] =
 		tuple(CMD_PEMU_BDM_MEM_W, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_WR_MEM_W] =
+		tuple(CMD_PEMU_BDM_MEM_W, CMD_TYPE_DATA);
+	bdm_prefixes[CMD_BDMCF_WR_MEM_L] =
+		tuple(CMD_PEMU_BDM_MEM_W, CMD_TYPE_DATA);
 	bdm_prefixes[CMD_BDMCF_RCREG] =
 		tuple(CMD_PEMU_BDM_MEM_R, CMD_TYPE_DATA);
 	bdm_prefixes[CMD_BDMCF_WCREG] =
@@ -200,6 +204,11 @@ void driver_pemu::send_reset(bool state)
 	obuf[OFS_BDM + 1] = state ? 0xf0 : 0xf8;
 
 	send_generic(CMD_TYPE_DATA, 2);
+}
+
+void driver_pemu::send_halt()
+{
+	send_reset(false);
 }
 
 void driver_pemu::send_go()

@@ -40,6 +40,11 @@ void bdm_ops::go()
 	drv->send_go();
 }
 
+void bdm_ops::halt()
+{
+	drv->send_halt();
+}
+
 uint32_t bdm_ops::read_dm_reg(uint8_t reg)
 {
 	memset(buff, 0, 2);
@@ -131,6 +136,36 @@ uint32_t bdm_ops::write_mem_byte(uint32_t address, uint8_t value)
 
 	/* heh, pemu wants a 16 bit value here, and 10 total to send */
 	*(uint16_t *)&buff[6] = ntohs(value);
+
+	drv->xfer_bdm_data(buff, 10);
+
+	return 0;
+}
+
+uint32_t bdm_ops::write_mem_word(uint32_t address, uint16_t value)
+{
+	memset(buff, 0, 10);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WR_MEM_W);
+	*(uint32_t *)&buff[2] = ntohl(address);
+
+	/* heh, pemu wants a 16 bit value here, and 10 total to send */
+	*(uint16_t *)&buff[6] = ntohs(value);
+
+	drv->xfer_bdm_data(buff, 10);
+
+	return 0;
+}
+
+uint32_t bdm_ops::write_mem_long(uint32_t address, uint32_t value)
+{
+	memset(buff, 0, 10);
+
+	*(uint16_t *)&buff[0] = ntohs(CMD_BDMCF_WR_MEM_L);
+	*(uint32_t *)&buff[2] = ntohl(address);
+
+	/* heh, pemu wants a 16 bit value here, and 10 total to send */
+	*(uint16_t *)&buff[6] = ntohl(value);
 
 	drv->xfer_bdm_data(buff, 10);
 

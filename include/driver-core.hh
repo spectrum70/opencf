@@ -21,6 +21,7 @@ struct driver {
 				   int size) = 0;
 	virtual void send_reset(bool state) = 0;
 	virtual void send_go() = 0;
+	virtual void send_halt() = 0;
 
 protected:
 	libusb_device *dev;

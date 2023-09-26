@@ -21,6 +21,7 @@ private:
 	void prompt();
 	void get_input_line(string &line);
 	void process_line(string &line);
+	void get_mem_values(uint32_t &addr, uint32_t &val);
 	int get_key_pressed();
 
 	int cmd_load();
@@ -28,6 +29,7 @@ private:
 	int cmd_read();
 	int cmd_write();
 	int cmd_go();
+	int cmd_halt();
 	int cmd_step();
 
 private:

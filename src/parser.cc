@@ -44,6 +44,7 @@ parser::parser(bdm_ops *b): bdm(b)
 	mcmd["read"] = &parser::cmd_read;
 	mcmd["write"] = &parser::cmd_write;
 	mcmd["go"] = &parser::cmd_go;
+	mcmd["halt"] = &parser::cmd_halt;
 	mcmd["step"] = &parser::cmd_step;
 	mcmd["st"] = &parser::cmd_step;
 
@@ -78,6 +79,13 @@ int parser::cmd_load()
 int parser::cmd_go()
 {
 	bdm->go();
+
+	return 0;
+}
+
+int parser::cmd_halt()
+{
+	bdm->halt();
 
 	return 0;
 }
@@ -173,10 +181,19 @@ int parser::cmd_read()
 	return 0;
 }
 
+void parser::get_mem_values(uint32_t &addr, uint32_t &val)
+{
+	string address = args[1];
+	string value = args[2];
+
+	addr = str_to_bin(address);
+	val = str_to_bin(value);
+}
+
 int parser::cmd_write()
 {
 	int rval = -1;
-	int val;
+	uint32_t addr, val;
 
 	if (args.size() < 3)
 		return 1;
@@ -189,19 +206,23 @@ int parser::cmd_write()
 			rval = bdm->write_ctrl_reg(crt_pc, val);
 		}
 	} else if (args[0] == "mem.b") {
-		string address = args[1];
-		string value = args[2];
-		int addr;
-
-		addr = str_to_bin(address);
-		val = str_to_bin(value);
-
-		log_dbg("val = %d\n", val);
+		get_mem_values(addr, val);
 
 		if (val > 255)
 			return 1;
 
-		rval = bdm->write_mem_byte(addr, val);
+		rval = bdm->write_mem_byte(addr, (uint16_t)val);
+	} else if (args[0] == "mem.w") {
+		get_mem_values(addr, val);
+
+		if (val > 65535)
+			return 1;
+
+		rval = bdm->write_mem_word(addr, (uint16_t)val);
+	} else if (args[0] == "mem.l") {
+		get_mem_values(addr, val);
+
+		rval = bdm->write_mem_long(addr, val);
 	}
 
 	return rval;
