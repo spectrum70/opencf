@@ -31,7 +31,8 @@ using namespace utils;
 
 static constexpr unsigned char REP_VERSION_INFO[] = {0x99, 0x66, 0x00, 0x64};
 
-static constexpr int OFS_BDM = 5;
+static constexpr int OFS_BDM_PREFIX = 5;
+static constexpr int OFS_BDM = 6;
 static constexpr int PEMU_CMD_REPLY_LEN = 4;
 static constexpr int PEMU_STD_PKT_SIZE = 256;
 static constexpr int PEMU_MAX_PKT_SIZE = 1280;
@@ -133,9 +134,28 @@ int driver_pemu::extract_info(unsigned char *offset, int pos, char *res)
 	return 0;
 }
 
+/*
+ * Small header for data that will be sent:
+ *
+ *          PE CMD_TYPE (BDM_PREFIX)
+ *          /       len
+ *          |       |       CMD_TYPE
+ *        | 2     | 2     | 1 |  cmd buffer
+ *   offs | 0     | 2     | 4 |
+ *
+ *   We then always send PEMU_STD_PKT_SIZE, len is important for pemu
+ *   only, to know what's the content.
+ *
+ *   len must include BDM PREFIX, so calculated from offset 5
+ */
 int driver_pemu::send_generic(uint8_t cmd_type, uint16_t len)
 {
 	*(uint16_t *)&obuf[0] = ntohs(PEMU_PT_CMD);
+	/*
+	 * Command sent to PEMU must include CMD_TYPE, PEMU_CMD and BDM budf.
+	 * so +1 is due to add cmd type byte. So PEMU 3 bytes hdr inform
+	 * of what's next.
+	 */
 	*(uint16_t *)&obuf[2] = ntohs(len + 1);
 	obuf[4] = cmd_type;
 
@@ -145,6 +165,11 @@ int driver_pemu::send_generic(uint8_t cmd_type, uint16_t len)
 	return 0;
 }
 
+/*
+ * This function is called from the bdm abstaction layer,
+ * PEMU CMD connected to bdm command must be resolved from
+ * a prevuolusly declared map.
+ */
 int driver_pemu::xfer_bdm_data(char *io_buff, int size)
 {
 	int midx = ntohs(*(uint16_t *)io_buff) & 0xfff0;
@@ -154,13 +179,29 @@ int driver_pemu::xfer_bdm_data(char *io_buff, int size)
 		return 1;
 	}
 
-	obuf[OFS_BDM] = std::get<0>(bdm_prefixes[midx]);
+	obuf[OFS_BDM_PREFIX] = std::get<0>(bdm_prefixes[midx]);
 
-	memcpy(&obuf[OFS_BDM + 1], io_buff, size);
+	memcpy(&obuf[OFS_BDM], io_buff, size);
 	send_generic(std::get<1>(bdm_prefixes[midx]), size);
-	memcpy(io_buff, &ibuf[OFS_BDM], PEMU_STD_PKT_SIZE - OFS_BDM);
+	memcpy(io_buff, &ibuf[OFS_BDM_PREFIX],
+		PEMU_STD_PKT_SIZE - OFS_BDM_PREFIX);
 
 	return 0;
+}
+
+/*
+ * Internal function to send biug_blocks reminders,
+ * not intended to be called from upper layers.
+ */
+int driver_pemu::write_mem_byte(uint32_t dest_addr, uint8_t byte)
+{
+	/* Composing wr mem */
+	*(uint16_t *)&obuf[OFS_BDM_PREFIX] = CMD_PEMU_BDM_MEM_W;
+	*(uint16_t *)&obuf[OFS_BDM] = ntohs(CMD_BDMCF_WR_MEM_B);
+	*(uint32_t *)&obuf[OFS_BDM + 2] = ntohl(dest_addr);
+	*(uint16_t *)&obuf[OFS_BDM + 6] = ntohs(byte);
+
+	return send_generic(CMD_TYPE_DATA, 11);
 }
 
 int driver_pemu::send_big_block(uint8_t *data, uint32_t dest_addr, int size)
@@ -192,16 +233,19 @@ int driver_pemu::send_big_block(uint8_t *data, uint32_t dest_addr, int size)
 		dest_addr += to_send;
 	}
 
-	//while (remainder--)
-		//pemu_write_mem_byte(dest_addr++, *data++);
+	while (remainder--) {
+		if (write_mem_byte(dest_addr++, *data++)) {
+			log_err("error writing teminder byte.");
+		}
+	}
 
 	return 0;
 }
 
 void driver_pemu::send_reset(bool state)
 {
-	obuf[OFS_BDM] = CMD_PEMU_RESET;
-	obuf[OFS_BDM + 1] = state ? 0xf0 : 0xf8;
+	obuf[OFS_BDM_PREFIX] = CMD_PEMU_RESET;
+	obuf[OFS_BDM] = state ? 0xf0 : 0xf8;
 
 	send_generic(CMD_TYPE_DATA, 2);
 }
@@ -213,14 +257,14 @@ void driver_pemu::send_halt()
 
 void driver_pemu::send_go()
 {
-	obuf[OFS_BDM] = CMD_PEMU_GO;
-	obuf[OFS_BDM + 1] = 0xfc;
-	*(uint16_t *)&obuf[OFS_BDM + 2] = ntohs(CMD_BDMCF_GO);
+	obuf[OFS_BDM_PREFIX] = CMD_PEMU_GO;
+	obuf[OFS_BDM] = 0xfc;
+	*(uint16_t *)&obuf[OFS_BDM + 1] = ntohs(CMD_BDMCF_GO);
 
 	send_generic(CMD_TYPE_DATA, 4);
 
-	obuf[OFS_BDM] = CMD_PEMU_BDM_REG_R;
-	*(uint16_t *)&obuf[OFS_BDM + 1] = ntohs(CMD_BDMCF_RDMREG);
+	obuf[OFS_BDM_PREFIX] = CMD_PEMU_BDM_REG_R;
+	*(uint16_t *)&obuf[OFS_BDM] = ntohs(CMD_BDMCF_RDMREG);
 
 	send_generic(CMD_TYPE_DATA, 3);
 }

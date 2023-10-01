@@ -28,6 +28,7 @@ private:
 	int extract_info(unsigned char *offset, int pos, char *res);
 	int send_and_recv(int tx_count, int rx_count);
 	int send_generic(uint8_t cmd_type, uint16_t len);
+	int write_mem_byte(uint32_t dest_addr, uint8_t byte);
 
 
 	map<int, tuple<int, int>> bdm_prefixes;

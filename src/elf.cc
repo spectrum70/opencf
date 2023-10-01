@@ -55,8 +55,10 @@ using namespace utils;
 int elf::load_program_headers(const char *elf, const char *offs, int entries)
 {
 	char *ptr = (char *)offs;
+	char sz_type[16] = {0};
 
-	log_dbg("%s() Offset   FileSiz   vaddr    paddr", __func__);
+	log_dbg("%s() tracing elf, %d entries ...", __func__, entries);
+	log_dbg("Type        Offset    FileSiz  vaddr    paddr", __func__);
 
 	while (entries--) {
 		Elf32_Phdr *phdr = (Elf32_Phdr *)ptr;
@@ -64,17 +66,33 @@ int elf::load_program_headers(const char *elf, const char *offs, int entries)
 		int type = ntohl(phdr->p_type);
 		int flags = ntohl(phdr->p_flags);
 
-		if (type == PT_LOAD && flags == (PF_R | PF_X)) {
-			log_dbg("%s() %08x %04x      %08x %08x", __func__,
-				ntohl(phdr->p_offset),
-				ntohl(phdr->p_filesz),
-				ntohl(phdr->p_vaddr),
-				ntohl(phdr->p_paddr));
+		switch (type) {
+		case PT_LOAD:
+			strcpy(sz_type, "LOAD");
+			break;
+		case PT_GNU_STACK:
+			strcpy(sz_type, "GNU_STACK");
+			break;
+		default:
+			strcpy(sz_type, "---");
+			break;
+		}
 
-			bdm->load_segment((unsigned char *)
-						elf + ntohl(phdr->p_offset),
-						ntohl(phdr->p_paddr),
-						ntohl(phdr->p_filesz));
+		log_dbg("%-12s%08x  %05x    %08x %08x", sz_type,
+			ntohl(phdr->p_offset),
+			ntohl(phdr->p_filesz),
+			ntohl(phdr->p_vaddr),
+			ntohl(phdr->p_paddr));
+
+		if (type == PT_LOAD && (flags == (PF_R | PF_X)
+			|| flags == (PF_R | PF_W | PF_X)
+			|| flags == (PF_R | PF_W))) {
+
+			if (phdr->p_filesz)
+				bdm->load_segment((unsigned char *)
+					elf + ntohl(phdr->p_offset),
+					ntohl(phdr->p_paddr),
+					ntohl(phdr->p_filesz));
 		}
 
 		ptr += sizeof(Elf32_Phdr);
