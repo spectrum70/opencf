@@ -10,7 +10,14 @@
 
 using namespace std;
 
-struct parser
+struct parser_help
+{
+	parser_help();
+protected:
+	map<string, string> mcmd_help;
+};
+
+struct parser : public parser_help
 {
 	parser(bdm_ops *b);
 	~parser();
@@ -24,13 +31,14 @@ private:
 	void get_mem_values(uint32_t &addr, uint32_t &val);
 	int get_key_pressed();
 
-	int cmd_load();
 	int cmd_exit();
-	int cmd_read();
-	int cmd_write();
 	int cmd_go();
 	int cmd_halt();
+	int cmd_help();
+	int cmd_load();
+	int cmd_read();
 	int cmd_step();
+	int cmd_write();
 
 private:
 	bdm_ops *bdm;

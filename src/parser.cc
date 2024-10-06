@@ -36,17 +36,46 @@ enum kstate {
 	kst_excape_sec,
 };
 
+static constexpr char special_regs[] = "pc, vbr, rambar, sp, sr";
+
+parser_help::parser_help()
+{
+	mcmd_help["exit"] = "exit application";
+	mcmd_help["go"] = "execute continuously";
+	mcmd_help["halt"] = "stop execution";
+	mcmd_help["help"] = "this help";
+	mcmd_help["load"] = "load elf executable";
+	mcmd_help["quit"] = "exit alias, exit application";
+	mcmd_help["read"] = "read memory or register:\n"
+		"    read mem.b location    read one byte from memory\n"
+		"    read mem.w location    read two bytes from memory\n"
+		"    read mem.l location    read four bytes from memory\n"
+		"    read reg name          read special register\n"
+		"    special registers: ";
+	mcmd_help["read"] += special_regs;
+	mcmd_help["st"] = "step alias, shorted";
+	mcmd_help["step"] = "step";
+	mcmd_help["write"] = "write memory or register:\n"
+		"    write mem.b location val    write one byte to memory\n"
+		"    write mem.w location val    write two bytes to memory\n"
+		"    write mem.l location val    write four bytes to memory\n"
+		"    write reg name val          write special register\n"
+		"    special registers: ";
+	mcmd_help["write"] += special_regs;
+}
+
 parser::parser(bdm_ops *b): bdm(b)
 {
-	mcmd["load"] = &parser::cmd_load;
 	mcmd["exit"] = &parser::cmd_exit;
-	mcmd["quit"] = &parser::cmd_exit;
-	mcmd["read"] = &parser::cmd_read;
-	mcmd["write"] = &parser::cmd_write;
 	mcmd["go"] = &parser::cmd_go;
 	mcmd["halt"] = &parser::cmd_halt;
-	mcmd["step"] = &parser::cmd_step;
+	mcmd["help"] = &parser::cmd_help;
+	mcmd["load"] = &parser::cmd_load;
+	mcmd["quit"] = &parser::cmd_exit;
+	mcmd["read"] = &parser::cmd_read;
 	mcmd["st"] = &parser::cmd_step;
+	mcmd["step"] = &parser::cmd_step;
+	mcmd["write"] = &parser::cmd_write;
 
 	tcgetattr(STDIN_FILENO, &oldt);
 
@@ -62,6 +91,21 @@ parser::~parser()
 {
 	/* Back to old config */
 	tcsetattr(STDIN_FILENO, TCSANOW, &oldt);
+}
+
+int parser::cmd_help()
+{
+	log_info("Available commands:");
+
+	map<string, cmd>::iterator it;
+
+	for (it = mcmd.begin(); it != mcmd.end(); it++) {
+		log_info(it->first.c_str());
+		string help = string("  ") + mcmd_help[it->first.c_str()];
+		log_info(help.c_str());
+	}
+
+	return 0;
 }
 
 int parser::cmd_load()
@@ -121,6 +165,12 @@ int parser::cmd_read()
 			rval = bdm->read_ctrl_reg(crt_rambar);
 		} else if (args[1] == "pc") {
 			rval = bdm->read_ctrl_reg(crt_pc);
+		} else if (args[1] == "vbr") {
+			rval = bdm->read_ctrl_reg(crt_vbr);
+		} else if (args[1] == "sp") {
+			rval = bdm->read_ctrl_reg(crt_sp_r);
+		} else if (args[1] == "sr") {
+			rval = bdm->read_ctrl_reg(crt_sr);
 		} else {
 			int reg_type = args[1][0];
 			int reg = args[1][1];
@@ -204,6 +254,10 @@ int parser::cmd_write()
 			rval = bdm->write_ctrl_reg(crt_rambar, val);
 		} else if (args[1] == "pc") {
 			rval = bdm->write_ctrl_reg(crt_pc, val);
+		} else if (args[1] == "vbr") {
+			rval = bdm->write_ctrl_reg(crt_vbr, val);
+		} else if (args[1] == "sp") {
+			rval = bdm->write_ctrl_reg(crt_sp_w, val);
 		}
 	} else if (args[0] == "mem.b") {
 		get_mem_values(addr, val);
