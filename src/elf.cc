@@ -129,8 +129,7 @@ char *elf::load_elf(const string &path)
 	}
 
 	log_dbg("%s() e_entry %08x, e_phoff %08x", __func__,
-					ntohl(ehdr->e_entry),
-					ntohl(ehdr->e_phoff));
+		ntohl(ehdr->e_entry), ntohl(ehdr->e_phoff));
 
 	if (ehdr->e_phoff)
 		load_program_headers(elf, &elf[ntohl(ehdr->e_phoff)],
