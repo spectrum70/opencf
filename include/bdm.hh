@@ -31,13 +31,19 @@ enum  cr_type {
 	crt_cacr = 0x002,
 	crt_acr0 = 0x004,
 	crt_acr1 = 0x005,
+	crt_d0_r = 0x80,
+	crt_a0_r = 0x88,
+	crt_fp_r = 0x8e,
+	crt_sp_r = 0x8f,
+	crt_sp_w = 0x18f,
 	crt_vbr = 0x801,
 	crt_macsr = 0x804,
 	crt_mask = 0x805,
 	crt_acc = 0x806,
 	crt_sr = 0x80e,
 	crt_pc = 0x80f,
-	crt_rambar = 0xc04,
+	crt_flashbar = 0xc04,
+	crt_rambar = 0xc05,
 };
 
 enum states {

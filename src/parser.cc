@@ -24,11 +24,14 @@
 #include "elf.hh"
 
 #include <iostream>
+#include <iomanip>
+#include <sstream>
 #include <fcntl.h>
 #include <unistd.h>
 
 using namespace trace;
 using namespace utils;
+using namespace std;
 
 enum kstate {
 	kst_normal,
@@ -53,6 +56,7 @@ parser_help::parser_help()
 		"    read reg name          read special register\n"
 		"    special registers: ";
 	mcmd_help["read"] += special_regs;
+	mcmd_help["regs"] = "dump cpu registers";
 	mcmd_help["st"] = "step alias, shorted";
 	mcmd_help["step"] = "step";
 	mcmd_help["write"] = "write memory or register:\n"
@@ -73,6 +77,7 @@ parser::parser(bdm_ops *b): bdm(b)
 	mcmd["load"] = &parser::cmd_load;
 	mcmd["quit"] = &parser::cmd_exit;
 	mcmd["read"] = &parser::cmd_read;
+	mcmd["regs"] = &parser::cmd_dump_cpu_regs;
 	mcmd["st"] = &parser::cmd_step;
 	mcmd["step"] = &parser::cmd_step;
 	mcmd["write"] = &parser::cmd_write;
@@ -151,6 +156,53 @@ int parser::cmd_step()
 int parser::cmd_exit()
 {
 	exit(0);
+}
+
+void parser::dump_set(stringstream &ss, int reg, char pre)
+{
+	int i, rval;
+
+	for (i = 0; i < 4; ++i, reg++) {
+		rval = bdm->read_ctrl_reg((cr_type)reg);
+		ss << pre << i << " " << hex
+		<< setw(8) << setfill('0') << rval << " ";
+	}
+	ss << "\n";
+	for (i = 0; i < 4; ++i, reg++) {
+		rval = bdm->read_ctrl_reg((cr_type)reg);
+		ss << pre << i + 4 << " " << hex
+		<< setw(8) << setfill('0') << rval << " ";
+	}
+	ss << "\n";
+}
+
+int parser::cmd_dump_cpu_regs()
+{
+	stringstream ss;
+
+	ss << ANSI_COLOR_WHITE;
+	dump_set(ss, crt_d0_r, 'd');
+	ss << ANSI_COLOR_CYAN;
+	dump_set(ss, crt_a0_r, 'a');
+
+	ss << ANSI_COLOR_YELLOW
+	   << "pc " << setw(8) << setfill('0')
+	   << bdm->read_ctrl_reg(crt_pc) << " "
+	   << "sr " << setw(8) << setfill('0')
+	   << bdm->read_ctrl_reg(crt_sr) << " "
+	   << "fp " << setw(8) << setfill('0')
+	   << bdm->read_ctrl_reg(crt_fp_r) << " "
+	   << "sp " << setw(8) << setfill('0')
+	   << bdm->read_ctrl_reg(crt_sp_r) << "\n"
+	   << ANSI_COLOR_GREEN
+	   << "rambar " << setw(8) << setfill('0')
+	   << bdm->read_ctrl_reg(crt_rambar) << "\n"
+	   << "vbr    " << setw(8) << setfill('0')
+	   << bdm->read_ctrl_reg(crt_vbr);
+
+	log_info(ss.str().c_str());
+
+	return 0;
 }
 
 int parser::cmd_read()

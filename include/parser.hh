@@ -30,7 +30,9 @@ private:
 	void process_line(string &line);
 	void get_mem_values(uint32_t &addr, uint32_t &val);
 	int get_key_pressed();
+	void dump_set(stringstream &ss, int reg, char pre);
 
+	int cmd_dump_cpu_regs();
 	int cmd_exit();
 	int cmd_go();
 	int cmd_halt();
