@@ -38,6 +38,15 @@ void log(const char *color, const char *format, va_list args)
 	printf(ANSI_COLOR_RESET "\n");
 }
 
+void log_ansi(const char *code, const char *format, ...)
+{
+	va_list args;
+
+	va_start(args, format);
+	log(code, format, args);
+	va_end(args);
+}
+
 void log_info(const char *format, ...)
 {
 	va_list args;

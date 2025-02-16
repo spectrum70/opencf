@@ -216,7 +216,6 @@ uint32_t bdm_ops::step()
 	case st_step:
 		drv->send_go();
 		rval = read_ctrl_reg(crt_pc);
-		state = st_running;
 		break;
 	default:
 	case st_running:

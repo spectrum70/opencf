@@ -11,9 +11,11 @@
 #define ANSI_COLOR_CYAN		"\x1b[36m"
 #define ANSI_COLOR_WHITE	"\x1b[37m"
 #define ANSI_COLOR_RESET	"\x1b[0m"
+#define ANSI_BOLD		"\x1b[1m"
 
 namespace trace {
 void log(const char *color, const char *format, va_list args);
+void log_ansi(const char *code, const char *format, ...);
 void log_imp(const char *format, ...);
 void log_info(const char *format, ...);
 void log_wrn(const char *format, ...);

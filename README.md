@@ -17,9 +17,7 @@ write mem.l 0x20000000 0x20000001
 
 mcf5282 has:
 64KB internal SRAM
-RAMBAR is the internal SRAM address, can be set as 0x20000000 fo 0x2fff0000
-
-SDRAM is at
+RAMBAR is the internal SRAM address, can be set as 0x20000000 to 0x2fff0000
 
 $ sudo ./opencf
 opencf 0.90(alpha) starting
@@ -33,8 +31,13 @@ starting parser ...
 
 # IPSBAR already enabled
 # Datasheet error,
-# at least from BDM rambar must be enabled (bit 0 to 1)
+
+# 1 - at least from BDM rambar must be enabled (bit 0 to 1)
 § write reg rambar 0x20000001
+# 2 - enabling IPSBAR
+§ write mem.l 0x40000000 0x40000001
+# second RAMBAR (rambar2)
+§ write mem.l 0x40000008 0x20000201
 § load cf64k-5282.elf
 § write reg vbr 0x20000000
 § go

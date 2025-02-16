@@ -100,15 +100,19 @@ parser::~parser()
 
 int parser::cmd_help()
 {
-	log_info("Available commands:");
+	log_ansi(ANSI_BOLD, "Available commands:");
 
 	map<string, cmd>::iterator it;
 
 	for (it = mcmd.begin(); it != mcmd.end(); it++) {
-		log_info(it->first.c_str());
+		log_ansi(ANSI_BOLD, it->first.c_str());
 		string help = string("  ") + mcmd_help[it->first.c_str()];
-		log_info(help.c_str());
+		log_ansi(ANSI_COLOR_RESET, help.c_str());
 	}
+
+	log_ansi(ANSI_BOLD, "Keys:");
+	log_ansi(ANSI_BOLD, "key enter");
+	log_ansi(ANSI_COLOR_RESET, "  repeat last command");
 
 	return 0;
 }
@@ -349,6 +353,9 @@ void parser::process_line(string &line)
 	string cmd;
 	size_t pos;
 
+	/* Store last. */
+	last = line;
+
 	args.clear();
 
 	/* Check for comments */
@@ -357,8 +364,11 @@ void parser::process_line(string &line)
 	if (pos != (size_t)-1)
 		line.resize(pos);
 
-	/* TO DO, check for ; */
+	if (!line.size()) {
+		printf("enter pressed\n");
+	}
 
+	/* TO DO, check for ; */
 	while (line.size()) {
 		pos = line.find(' ');
 		if (pos == string::npos) {
@@ -381,6 +391,12 @@ void parser::process_line(string &line)
 	if ((this->*mcmd[cmd])()) {
 		log_err("invalid command");
 	}
+}
+
+void parser::repeat_last_cmd()
+{
+	if (last.size())
+		process_line(last);
 }
 
 void parser::get_input_line(string &line)
@@ -466,5 +482,7 @@ int parser::run()
 		get_input_line(line);
 		if (line.size())
 			process_line(line);
+		else
+			repeat_last_cmd();
 	}
 }

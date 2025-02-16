@@ -28,6 +28,7 @@ private:
 	void prompt();
 	void get_input_line(string &line);
 	void process_line(string &line);
+	void repeat_last_cmd();
 	void get_mem_values(uint32_t &addr, uint32_t &val);
 	int get_key_pressed();
 	void dump_set(stringstream &ss, int reg, char pre);
@@ -44,6 +45,7 @@ private:
 
 private:
 	bdm_ops *bdm;
+	string last{};
 	vector<string> args;
 	deque<string> commands;
 	struct termios oldt, newt;
