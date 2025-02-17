@@ -36,3 +36,5 @@ starting parser ...
 § load cf64k.elf
 # VBR can be set from the code, as in cf64k-5282.elf
 § go
+
+Note: do not step before go
