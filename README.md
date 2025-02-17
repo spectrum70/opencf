@@ -29,16 +29,10 @@ detecting connected cpu ...
 found: coldfire, v.2, rev.0, isa a+, sram 64KB
 starting parser ...
 
-# IPSBAR already enabled
-# Datasheet error,
-
-# 1 - at least from BDM rambar must be enabled (bit 0 to 1)
+# If from BDM, rambar must be enabled (bit 0 to 1)
 § write reg rambar 0x20000001
-# 2 - enabling IPSBAR
-§ write mem.l 0x40000000 0x40000001
-# second RAMBAR (rambar2)
-§ write mem.l 0x40000008 0x20000201
-§ load cf64k-5282.elf
-§ write reg vbr 0x20000000
+# enabling IPSBAR (default ok, not needed)
+# second RAMBAR (rambar2) not needed (DMA only usage)
+§ load cf64k.elf
+# VBR can be set from the code, as in cf64k-5282.elf
 § go
-
