@@ -23,6 +23,7 @@
 #include "driver-core.hh"
 
 #include <cstring>
+#include <unistd.h>
 
 using namespace utils;
 
@@ -37,12 +38,21 @@ void bdm_ops::reset(bool state)
 
 void bdm_ops::go()
 {
+	int value;
+
+	value = read_dm_reg(BDM_REG_CSR);
+
+	value &= ~CSR_SSM;
+	value |= (CSR_IPI | CSR_EMULATION);
+	write_dm_reg(BDM_REG_CSR, value);
+
 	drv->send_go();
 }
 
 void bdm_ops::halt()
 {
 	drv->send_halt();
+	state = st_halted;
 }
 
 uint32_t bdm_ops::read_dm_reg(uint8_t reg)
