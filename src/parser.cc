@@ -404,6 +404,7 @@ void parser::get_input_line(string &line)
 	int c;
 	int kstate = kst_normal;
 	int ptr = -1, i, pos, llen = 0;
+	string tmp;
 
 	line.clear();
 
@@ -420,13 +421,25 @@ void parser::get_input_line(string &line)
 				if (line.size()) {
 					cout << "\b \b" << flush;
 					line.resize(line.size() - 1);
+					if (line_pos)
+						line_pos--;
 				}
 			} else {
 				/* We ECHO the char */
 				cout << (char)c;
 				if (c != '\n') {
-					line.push_back(c);
+					if (line_pos && line_pos < line.size()) {
+						tmp = line.substr(line_pos);
+						line.insert(line_pos, 1, c);
+						cout << tmp;
+						cout << "\x1b[" << (line.size() - line_pos - 1) << "D";
+					} else {
+						line.push_back(c);
+
+					}
+					line_pos++;
 				} else {
+					line_pos = 0;
 					goto line_in;
 				}
 			}
@@ -458,6 +471,16 @@ void parser::get_input_line(string &line)
 				llen = line.size();
 
 				cout << line << flush;
+			} else if (c == 'D') {
+				if (line_pos > 1) {
+					cout << "\x1b[D";
+					line_pos--;
+				}
+			} else if (c == 'C') {
+				if (line_pos && line_pos < line.size()) {
+					cout << "\x1b[C";
+					line_pos++;
+				}
 			}
 
 			kstate = kst_normal;

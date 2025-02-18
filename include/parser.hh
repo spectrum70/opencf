@@ -46,6 +46,7 @@ private:
 private:
 	bdm_ops *bdm;
 	string last{};
+	unsigned int line_pos{};
 	vector<string> args;
 	deque<string> commands;
 	struct termios oldt, newt;
