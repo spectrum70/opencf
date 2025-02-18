@@ -1,6 +1,6 @@
-opencf
+![](opencf.png)
 
-ColdFire programming tool
+opencf - a ColdFire programming tool
 
 Angelo Dureghello <angelo@kernel-space.org>
 
