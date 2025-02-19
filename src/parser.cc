@@ -471,6 +471,8 @@ void parser::get_input_line(string &line)
 				llen = line.size();
 
 				cout << line << flush;
+				line_pos = line.size();
+
 			} else if (c == 'D') {
 				if (line_pos > 1) {
 					cout << "\x1b[D";
